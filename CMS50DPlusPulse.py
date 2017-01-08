@@ -1,5 +1,8 @@
+"""This is still VERY much in progress; modified from atrask (c) 2015"""
 #!/usr/bin/env python
 import sys, serial, argparse, datetime
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from dateutil import parser as dateparser
 
 class LiveDataPoint(object):
@@ -125,17 +128,20 @@ class CMS50Dplus(object):
             self.disconnect()
 
 def dumpLiveData(port):
-    print "Saving live data..."
-    print "Press CTRL-C or disconnect the device to terminate data collection."
+    fig = plt.figure()
+    ax1 = fig.add_subplot(1,1,1)
     oximeter = CMS50Dplus(port)
     measurements = 0
     for liveData in oximeter.getLiveData():
         if measurements % 60 == 0:
             print liveData
+            #ax1.clear()
+            ax1.plot(measurements,int(str(liveData)))
+            plt.show()
         measurements += 1
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="cms50dplus.py v1.0 - Contec CMS50D+ GUI (c) 2016 J.J. Gerschler")
+    parser = argparse.ArgumentParser(description="CMS50DPlusPulse.py v1.0 - Contec CMS50D+ Plotter (c) 2016 J.J. Gerschler")
     parser.add_argument("serialport", help="Virtual serial port where pulse oximeter is connected.")
 
     args = parser.parse_args()
