@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 import sys, serial, argparse, datetime
 from dateutil import parser as dateparser
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 class LiveDataPoint(object):
     def __init__(self, time, data): 
@@ -65,6 +67,10 @@ class CMS50Dplus(object):
         else:
             return ord(char)
 
+    def animate(self, i):
+        ax1.clear()
+        ax1.plot(xArray,yArray)
+    
     def getLiveData(self):
         try:
             self.connect()
@@ -88,20 +94,31 @@ class CMS50Dplus(object):
         except:
             self.disconnect()
 
+def animate(i,oximeter,measurements,xArray,yArray,ax1):
+    for liveData in oximeter.getLiveData():
+        xArray.append(measurements)
+        yArray.append(int(str(liveData)))
+        measurements += 1
+        ax1.clear()
+        ax1.plot(xArray, yArray)
+
 def dumpLiveData(port):
-    print "Saving live data..."
-    print "Press CTRL-C or disconnect the device to terminate data collection."
+    xArray = []
+    yArray = []
     oximeter = CMS50Dplus(port)
     measurements = 0
-    for liveData in oximeter.getLiveData():
-        if measurements % 60 == 0:
-            print liveData
-        measurements += 1
+    fig = plt.figure()
+    ax1 = fig.add_subplot(1,1,1)
+    ani = animation.FuncAnimation(fig, animate, interval=1000, fargs=(oximeter,measurements,xArray,yArray,ax1))
+    plt.show()    
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="cms50dplus.py v1.0 - Contec CMS50D+ GUI (c) 2016 J.J. Gerschler")
-    parser.add_argument("serialport", help="Virtual serial port where pulse oximeter is connected.")
+##    parser = argparse.ArgumentParser(description="cms50dplus.py v1.0 - Contec CMS50D+ GUI (c) 2016 J.J. Gerschler")
+##    parser.add_argument("serialport", help="Virtual serial port where pulse oximeter is connected.")
+##
+##    args = parser.parse_args()
 
-    args = parser.parse_args()
-
-    dumpLiveData(args.serialport)
+##    dumpLiveData(args.serialport)
+    dumpLiveData('COM5')
+else:
+    dumpLiveData('COM5')
