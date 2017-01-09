@@ -106,16 +106,27 @@ class CMS50Dplus(threading.Thread):
         except:
             self.disconnect()        
 
+def animate(i):
+    global xArray
+    global yArray
+    ax1.clear()
+    ax1.plot(xArray, yArray)
+            
 # Create new threads
 thread1 = CMS50Dplus("COM5")
 # Start new Threads
 thread1.start()
 print("Thread Started\n")
 time.sleep(1)
-while 1:
-    print("---------------------")
-    print("Current array values:")
-    print(xArray)
-    print(yArray)
-    print("---------------------")
-    time.sleep(1)
+# while 1:
+    # print("---------------------")
+    # print("Current array values:")
+    # print(xArray)
+    # print(yArray)
+    # print("---------------------")
+    # time.sleep(1)
+    
+fig = plt.figure()
+ax1 = fig.add_subplot(1,1,1)
+ani = animation.FuncAnimation(fig, animate, 1000)
+plt.show()
