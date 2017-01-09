@@ -1,9 +1,15 @@
 #!/usr/bin/env python
-import sys, serial, argparse, datetime
+import sys, serial, argparse, datetime, threading, time
 from dateutil import parser as dateparser
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+c = threading.Condition()
+# shared variables
+xArray = []
+yArray = []
+
+# packet analysis
 class LiveDataPoint(object):
     def __init__(self, time, data): 
         if [d & 0x80 != 0 for d in data] != [True, False, False, False, False]:
@@ -35,9 +41,10 @@ class LiveDataPoint(object):
     def __str__(self):
         return str(self.pulseRate)
 
-
-class CMS50Dplus(object):
+# pulse oximeter communication thread
+class CMS50Dplus(threading.Thread):
     def __init__(self, port):
+        threading.Thread.__init__(self)
         self.port = port
         self.conn = None
 
@@ -66,17 +73,17 @@ class CMS50Dplus(object):
             return None
         else:
             return ord(char)
-
-    def animate(self, i):
-        ax1.clear()
-        ax1.plot(xArray,yArray)
     
     def getLiveData(self):
+        global xArray
+        global yArray
+        measurements = 0
         try:
             self.connect()
             packet = [0]*5
             idx = 0
             while True:
+                c.acquire()
                 byte = self.getByte()
             
                 if byte is None:
@@ -84,41 +91,72 @@ class CMS50Dplus(object):
 
                 if byte & 0x80:
                     if idx == 5 and packet[0] & 0x80:
-                        yield LiveDataPoint(datetime.datetime.utcnow(), packet)
+                        xArray.append(measurement)
+                        yArray.append(int(LiveDataPoint(datetime.datetime.utcnow(), packet)))
+                        time.sleep(0.2)
+                        measurement += 1
                     packet = [0]*5
                     idx = 0
+                    c.notify_all()
             
                 if idx < 5:
                     packet[idx] = byte
                     idx+=1
+                
+                else:
+                    c.wait()
+                c.release()
         except:
             self.disconnect()
 
-def animate(i,oximeter,measurements,xArray,yArray,ax1):
-    for liveData in oximeter.getLiveData():
-        xArray.append(measurements)
-        yArray.append(int(str(liveData)))
-        measurements += 1
-        ax1.clear()
-        ax1.plot(xArray, yArray)
+            
+class Animator(threading.Thread):
+    def __init__(self, name):
+        threading.Thread.__init__(self)
+        self.name = name
+        self.fig = plt.figure()
+        self.ax1 = self.fig.add_subplot(1,1,1)
 
-def dumpLiveData(port):
-    xArray = []
-    yArray = []
-    oximeter = CMS50Dplus(port)
-    measurements = 0
-    fig = plt.figure()
-    ax1 = fig.add_subplot(1,1,1)
-    ani = animation.FuncAnimation(fig, animate, interval=1000, fargs=(oximeter,measurements,xArray,yArray,ax1))
-    plt.show()    
+    def animate(self,i):
+        global xArray
+        global yArray
+        self.ax1.clear()        
+        self.ax1.plot(xArray, yArray)
 
-if __name__ == "__main__":
-##    parser = argparse.ArgumentParser(description="cms50dplus.py v1.0 - Contec CMS50D+ GUI (c) 2016 J.J. Gerschler")
-##    parser.add_argument("serialport", help="Virtual serial port where pulse oximeter is connected.")
-##
-##    args = parser.parse_args()
+    def run(self):
+        c.acquire()
+        ani = animation.FuncAnimation(self.fig, self.animate, interval=1000)
+        plt.show()
+        c.notify_all() # not getting here!
+        c.release()            
+            
+            
+oximeter = CMS50Dplus('COM5')
+plotter = Animator('Pulse')           
 
-##    dumpLiveData(args.serialport)
-    dumpLiveData('COM5')
-else:
-    dumpLiveData('COM5')
+print('classes inited')
+
+oximeter.start()
+plotter.start()
+
+print('threads started')
+
+oximeter.join()
+plotter.join()
+
+print('threads joined')
+            
+# modify below this point
+
+
+# def dumpLiveData(port):
+    # oximeter = CMS50Dplus(port)
+    # oximeter.start()
+    # oximeter.join()
+    # measurements = 0
+    # for liveData in oximeter.getLiveData():
+        # if measurements % 60 == 0:
+            # print liveData
+        # measurements += 1    
+
+
