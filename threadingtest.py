@@ -1,6 +1,8 @@
 #!/usr/bin/python
-
-import threading, time, random
+import sys, serial, argparse, datetime, threading, time, random
+from dateutil import parser as dateparser
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 xArray = []
 yArray = []
@@ -39,6 +41,8 @@ class LiveDataPoint(object):
 
 # pulse oximeter communication thread
 class CMS50Dplus(threading.Thread):
+    global xArray
+    global yArray
     def __init__(self, port):
         threading.Thread.__init__(self)
         self.port = port
@@ -70,16 +74,13 @@ class CMS50Dplus(threading.Thread):
         else:
             return ord(char)
     
-    def getLiveData(self):
-        global xArray
-        global yArray
-        measurements = 0
+    def run(self):
+        counter = 0
         try:
             self.connect()
             packet = [0]*5
             idx = 0
             while True:
-                c.acquire()
                 byte = self.getByte()
             
                 if byte is None:
@@ -87,47 +88,26 @@ class CMS50Dplus(threading.Thread):
 
                 if byte & 0x80:
                     if idx == 5 and packet[0] & 0x80:
-                        xArray.append(measurement)
-                        yArray.append(int(LiveDataPoint(datetime.datetime.utcnow(), packet)))
-                        time.sleep(0.2)
-                        measurement += 1
+                        if len(xArray) > 100:
+                            xArray.pop(0)
+                            yArray.pop(0)
+                            xArray.append(counter)
+                            yArray.append(int(str(LiveDataPoint(datetime.datetime.utcnow(), packet))))
+                        else:
+                            xArray.append(counter)
+                            yArray.append(int(str(LiveDataPoint(datetime.datetime.utcnow(), packet))))
+                        counter += 1
                     packet = [0]*5
                     idx = 0
-                    c.notify_all()
             
                 if idx < 5:
                     packet[idx] = byte
                     idx+=1
-                
-                else:
-                    c.wait()
-                c.release()
         except:
             self.disconnect()        
-        
-class myThread (threading.Thread):
-    global xArray
-    global yArray
-    def __init__(self, name):
-        threading.Thread.__init__(self)
-        self.name = name
-    def run(self):
-        counter = 0
-        while 1:
-            if len(xArray) > 10:
-                xArray.pop(0)
-                yArray.pop(0)
-                xArray.append(counter)
-                yArray.append(random.randint(1,8))
-            else:
-                xArray.append(counter)
-                yArray.append(random.randint(1,8))                
-            print("Data Generated!")
-            counter += 1
-            time.sleep(2)
 
 # Create new threads
-thread1 = myThread("Thread-1")
+thread1 = CMS50Dplus("COM5")
 # Start new Threads
 thread1.start()
 print("Thread Started\n")
@@ -138,4 +118,4 @@ while 1:
     print(xArray)
     print(yArray)
     print("---------------------")
-    time.sleep(2)
+    time.sleep(1)
