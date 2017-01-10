@@ -1,3 +1,6 @@
+"""In progress -- still need to make several changes,
+including closing thread gracefully."""
+
 #!/usr/bin/python
 import sys, serial, argparse, datetime, threading, time, random
 from dateutil import parser as dateparser
@@ -8,7 +11,7 @@ xArray = []# could use numpy arrays here
 PulseArray = []
 SpO2Array = []
 
-# packet analysis
+# packet analysis -- pulled from https://github.com/atbrask
 class LiveDataPoint(object):
     def __init__(self, time, data): 
         if [d & 0x80 != 0 for d in data] != [True, False, False, False, False]:
@@ -91,7 +94,7 @@ class CMS50Dplus(threading.Thread):
                 if byte & 0x80:
                     if idx == 5 and packet[0] & 0x80:
                         data = str(LiveDataPoint(datetime.datetime.utcnow(), packet)).split(',')
-                        if len(xArray) > 1000:
+                        if len(xArray) > 5000:
                             xArray.pop(0)
                             PulseArray.pop(0)
                             SpO2Array.pop(0)
@@ -118,15 +121,17 @@ def animate(i):
     global PulseArray
     global SpO2Array
     ax1.clear()
-    ax1.plot(xArray, PulseArray)
-    ax1.set_title("Pulse Tracker")
+    ax1.plot(xArray, PulseArray, xArray, SpO2Array)
+    ax1.set_title("Pulse and SpO2 Tracker")
     ax1.set_autoscaley_on(False)
     ax1.set_ylim([40,140])
-    textstr = "Pulse: {}".format(str(PulseArray[-1]))
+    textPulse = "Pulse: {}".format(str(PulseArray[-1]))
+    textSpO2 = "SpO2: {}".format(str(SpO2Array[-1]))
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    ax1.text(0.05, 0.95, textstr, transform=ax1.transAxes, fontsize=14, verticalalignment='top', bbox=props)
+    ax1.text(0.05, 0.95, textPulse, transform=ax1.transAxes, fontsize=14, color='blue', verticalalignment='top', bbox=props)
+    ax1.text(0.05, 0.85, textSpO2, transform=ax1.transAxes, fontsize=14, color='green', verticalalignment='top', bbox=props)
 
-thread1 = CMS50Dplus("COM5")
+thread1 = CMS50Dplus("COM5")# adjust COM port as needed
 thread1.start()
 time.sleep(1)
     
