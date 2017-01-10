@@ -4,8 +4,9 @@ from dateutil import parser as dateparser
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-xArray = []
-yArray = []
+xArray = []# could use numpy arrays here
+PulseArray = []
+SpO2Array = []
 
 # packet analysis
 class LiveDataPoint(object):
@@ -37,12 +38,13 @@ class LiveDataPoint(object):
         self.bloodSpO2 = data[4] & 0x7f
 
     def __str__(self):
-        return str(self.pulseRate)
+        return str(self.pulseRate)+","+str(self.bloodSpO2)
 
 # pulse oximeter communication thread
 class CMS50Dplus(threading.Thread):
     global xArray
-    global yArray
+    global PulseArray
+    global SpO2Array
     def __init__(self, port):
         threading.Thread.__init__(self)
         self.port = port
@@ -88,14 +90,18 @@ class CMS50Dplus(threading.Thread):
 
                 if byte & 0x80:
                     if idx == 5 and packet[0] & 0x80:
-                        if len(xArray) > 100:
+                        data = str(LiveDataPoint(datetime.datetime.utcnow(), packet)).split(',')
+                        if len(xArray) > 1000:
                             xArray.pop(0)
-                            yArray.pop(0)
+                            PulseArray.pop(0)
+                            SpO2Array.pop(0)
                             xArray.append(counter)
-                            yArray.append(int(str(LiveDataPoint(datetime.datetime.utcnow(), packet))))
+                            PulseArray.append(int(data[0]))
+                            SpO2Array.append(int(data[1]))
                         else:
                             xArray.append(counter)
-                            yArray.append(int(str(LiveDataPoint(datetime.datetime.utcnow(), packet))))
+                            PulseArray.append(int(data[0]))
+                            SpO2Array.append(int(data[1]))
                         counter += 1
                     packet = [0]*5
                     idx = 0
@@ -104,27 +110,25 @@ class CMS50Dplus(threading.Thread):
                     packet[idx] = byte
                     idx+=1
         except:
-            self.disconnect()        
+            time.sleep(0.1)# faulty cable causes occasional disconnection/connection
+            pass  
 
 def animate(i):
     global xArray
-    global yArray
+    global PulseArray
+    global SpO2Array
     ax1.clear()
-    ax1.plot(xArray, yArray)
-            
-# Create new threads
+    ax1.plot(xArray, PulseArray)
+    ax1.set_title("Pulse Tracker")
+    ax1.set_autoscaley_on(False)
+    ax1.set_ylim([40,140])
+    textstr = "Pulse: {}".format(str(PulseArray[-1]))
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    ax1.text(0.05, 0.95, textstr, transform=ax1.transAxes, fontsize=14, verticalalignment='top', bbox=props)
+
 thread1 = CMS50Dplus("COM5")
-# Start new Threads
 thread1.start()
-print("Thread Started\n")
 time.sleep(1)
-# while 1:
-    # print("---------------------")
-    # print("Current array values:")
-    # print(xArray)
-    # print(yArray)
-    # print("---------------------")
-    # time.sleep(1)
     
 fig = plt.figure()
 ax1 = fig.add_subplot(1,1,1)
