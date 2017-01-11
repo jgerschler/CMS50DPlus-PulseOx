@@ -53,7 +53,7 @@ class CMS50Dplus(threading.Thread):
         self.port = port
         self.conn = None
 
-    def isConnected(self):
+    def is_connected(self):
         return type(self.conn) is serial.Serial and self.conn.isOpen()
 
     def connect(self):
@@ -65,14 +65,14 @@ class CMS50Dplus(threading.Thread):
                                       bytesize = serial.EIGHTBITS,
                                       timeout = 5,
                                       xonxoff = 1)
-        elif not self.isConnected():
+        elif not self.is_connected():
             self.conn.open()
 
     def disconnect(self):
-        if self.isConnected():
+        if self.is_connected():
             self.conn.close()
 
-    def getByte(self):
+    def get_byte(self):
         char = self.conn.read()
         if len(char) == 0:
             return None
@@ -86,7 +86,7 @@ class CMS50Dplus(threading.Thread):
             packet = [0]*5
             idx = 0
             while True:
-                byte = self.getByte()
+                byte = self.get_byte()
             
                 if byte is None:
                     break
