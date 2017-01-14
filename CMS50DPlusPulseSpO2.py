@@ -7,9 +7,9 @@ from dateutil import parser as dateparser
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-xArray = []# could use numpy arrays here
-PulseArray = []
-SpO2Array = []
+x_array = []# could use numpy arrays here
+pulse_array = []
+spo2_array = []
 
 # packet analysis -- pulled from https://github.com/atbrask
 class LiveDataPoint(object):
@@ -20,34 +20,34 @@ class LiveDataPoint(object):
         self.time = time
 
         # 1st byte
-        self.signalStrength = data[0] & 0x0f
-        self.fingerOut = bool(data[0] & 0x10)
-        self.droppingSpO2 = bool(data[0] & 0x20)
+        self.signal_strength = data[0] & 0x0f
+        self.finger_out = bool(data[0] & 0x10)
+        self.dropping_spo2 = bool(data[0] & 0x20)
         self.beep = bool(data[0] & 0x40)
 
         # 2nd byte
-        self.pulseWaveform = data[1]
+        self.pulse_waveform = data[1]
 
         # 3rd byte
-        self.barGraph = data[2] & 0x0f
-        self.probeError = bool(data[2] & 0x10)
+        self.bargraph = data[2] & 0x0f
+        self.probe_error = bool(data[2] & 0x10)
         self.searching = bool(data[2] & 0x20)
-        self.pulseRate = (data[2] & 0x40) << 1
+        self.pulse_rate = (data[2] & 0x40) << 1
 
         # 4th byte
-        self.pulseRate |= data[3] & 0x7f
+        self.pulse_rate |= data[3] & 0x7f
 
         # 5th byte
-        self.bloodSpO2 = data[4] & 0x7f
+        self.blood_spo2 = data[4] & 0x7f
 
     def __str__(self):
-        return str(self.pulseRate)+","+str(self.bloodSpO2)
+        return str(self.pulse_rate)+","+str(self.blood_spo2)
 
 # pulse oximeter communication thread
 class CMS50Dplus(threading.Thread):
-    global xArray
-    global PulseArray
-    global SpO2Array
+    global x_array
+    global pulse_array
+    global spo2_array
     def __init__(self, port):
         threading.Thread.__init__(self)
         self.port = port
@@ -94,17 +94,17 @@ class CMS50Dplus(threading.Thread):
                 if byte & 0x80:
                     if idx == 5 and packet[0] & 0x80:
                         data = str(LiveDataPoint(datetime.datetime.utcnow(), packet)).split(',')
-                        if len(xArray) > 5000:
-                            xArray.pop(0)
-                            PulseArray.pop(0)
-                            SpO2Array.pop(0)
-                            xArray.append(counter)
-                            PulseArray.append(int(data[0]))
-                            SpO2Array.append(int(data[1]))
+                        if len(x_array) > 5000:
+                            x_array.pop(0)
+                            pulse_array.pop(0)
+                            spo2_array.pop(0)
+                            x_array.append(counter)
+                            pulse_array.append(int(data[0]))
+                            spo2_array.append(int(data[1]))
                         else:
-                            xArray.append(counter)
-                            PulseArray.append(int(data[0]))
-                            SpO2Array.append(int(data[1]))
+                            x_array.append(counter)
+                            pulse_array.append(int(data[0]))
+                            spo2_array.append(int(data[1]))
                         counter += 1
                     packet = [0]*5
                     idx = 0
@@ -117,25 +117,25 @@ class CMS50Dplus(threading.Thread):
             pass  
 
 def animate(i):
-    global xArray
-    global PulseArray
-    global SpO2Array
+    global x_array
+    global pulse_array
+    global spo2_array
     ax1.clear()
-    ax1.plot(xArray, PulseArray, xArray, SpO2Array)
+    ax1.plot(x_array, pulse_array, x_array, spo2_array)
     ax1.set_title("Pulse and SpO2 Tracker")
     ax1.set_autoscaley_on(False)
     ax1.set_ylim([40,140])
-    textPulse = "Pulse: {}".format(str(PulseArray[-1]))
-    textSpO2 = "SpO2: {}".format(str(SpO2Array[-1]))
+    text_pulse = "Pulse: {}".format(str(pulse_array[-1]))
+    text_spo2 = "SpO2: {}".format(str(spo2_array[-1]))
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    ax1.text(0.05, 0.95, textPulse, transform=ax1.transAxes, fontsize=14, color='blue', verticalalignment='top', bbox=props)
-    ax1.text(0.05, 0.85, textSpO2, transform=ax1.transAxes, fontsize=14, color='green', verticalalignment='top', bbox=props)
+    ax1.text(0.05, 0.95, text_pulse, transform=ax1.transAxes, fontsize=14, color='blue', verticalalignment='top', bbox=props)
+    ax1.text(0.05, 0.85, text_spo2, transform=ax1.transAxes, fontsize=14, color='green', verticalalignment='top', bbox=props)
 
-thread1 = CMS50Dplus("COM5")# adjust COM port as needed
-thread1.start()
+new_instance = CMS50Dplus("COM5")# adjust COM port as needed
+new_instance.start()
 time.sleep(1)
-    
+
 fig = plt.figure()
-ax1 = fig.add_subplot(1,1,1)
+ax1 = fig.add_subplot(1, 1, 1)
 ani = animation.FuncAnimation(fig, animate, 1000)
 plt.show()
