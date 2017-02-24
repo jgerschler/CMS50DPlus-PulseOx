@@ -1,6 +1,6 @@
 """In progress -- still need to make several changes,
 including closing thread gracefully."""
-#!/usr/bin/python
+#!/usr/bin/env python
 import sys, serial, argparse, datetime, threading, time, random
 from dateutil import parser as dateparser
 import matplotlib.pyplot as plt
