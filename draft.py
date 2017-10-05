@@ -76,18 +76,6 @@ class CMS50Dplus(object):
 
         return str(self.pulse_rate)+","+str(self.blood_spo2)
 
-    def animate(self, i):# add i
-        self.ax1.clear()
-        self.ax1.plot(self.x_array, self.pulse_array, 'b', self.x_array, self.spo2_array, 'g')
-        self.ax1.set_title("Pulse and SpO2 Tracker")
-        self.ax1.set_autoscaley_on(False)
-        self.ax1.set_ylim([40,140])
-        text_pulse = "Pulse: {}".format(str(self.pulse_array[-1]))
-        text_spo2 = "SpO2: {}".format(str(self.spo2_array[-1]))
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        self.ax1.text(0.05, 0.95, text_pulse, transform=self.ax1.transAxes, fontsize=14, color='blue', verticalalignment='top', bbox=props)
-        self.ax1.text(0.05, 0.85, text_spo2, transform=self.ax1.transAxes, fontsize=14, color='green', verticalalignment='top', bbox=props)
-
     def run(self):
         print("entering run")
         counter = 0
@@ -95,18 +83,6 @@ class CMS50Dplus(object):
             self.connect()
             packet = [0]*5
             idx = 0
-            self.fig = plt.figure()# this section needs to be altered
-            self.ax1 = self.fig.add_subplot(1, 1, 1)
-            self.ax1.plot(self.x_array, self.pulse_array, 'b', self.x_array, self.spo2_array, 'g')
-            self.ax1.set_title("Pulse and SpO2 Tracker")
-            self.ax1.set_autoscaley_on(False)
-            self.ax1.set_ylim([40,140])
-            text_pulse = "Pulse: {}".format(str(self.pulse_array[-1]))
-            text_spo2 = "SpO2: {}".format(str(self.spo2_array[-1]))
-            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            self.ax1.text(0.05, 0.95, text_pulse, transform=self.ax1.transAxes, fontsize=14, color='blue', verticalalignment='top', bbox=props)
-            self.ax1.text(0.05, 0.85, text_spo2, transform=self.ax1.transAxes, fontsize=14, color='green', verticalalignment='top', bbox=props)
-            plt.show()
             while True:
                 byte = self.get_byte()
             
@@ -130,12 +106,7 @@ class CMS50Dplus(object):
                             self.pulse_array.append(int(data[0]))
                             self.spo2_array.append(int(data[1]))
 
-                        time.sleep(1)
-                        self.ax1.set_xdata# continue here!
-
-                        #self.ax1.clear()                    
-                        #self.ani = animation.FuncAnimation(self.fig, self.animate, 1000)
-                        
+                        time.sleep(1)                        
                         counter += 1
                     packet = [0]*5
                     idx = 0
