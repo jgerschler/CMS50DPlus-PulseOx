@@ -15,13 +15,10 @@ import matplotlib.animation as animation
 
 # pulse oximeter communication thread
 class CMS50Dplus(object):
-    def __init__(self, port, x_array, pulse_array, spo2_array):
+    def __init__(self, port):
         threading.Thread.__init__(self)
         self.port = port
         self.conn = None
-        self.x_array = x_array
-        self.pulse_array = pulse_array
-        self.spo2_array = spo2_array
 
     def is_connected(self):
         return type(self.conn) is serial.Serial and self.conn.isOpen()
@@ -48,6 +45,17 @@ class CMS50Dplus(object):
             return None
         else:
             return ord(char)
+
+    def plot_init(self):
+        ax.set_ylim(40, 140)
+        ax.set_xlim(0, 10)
+        del time_data[:]
+        del ydata[:]
+        del xdata2[:]
+        del ydata2[:]
+        line.set_data(xdata, ydata)
+        line.set_data(xdata2, ydata2)
+        return line, line2,        
 
     def update_data(self, data):
         t, y = data
@@ -95,26 +103,27 @@ class CMS50Dplus(object):
             self.connect()
             packet = [0]*5
             idx = 0
-            while True:
-                byte = self.get_byte()
-            
-                if byte is None:
-                    print("byte is none")
-                    break
+            byte = self.get_byte()
+        
+            if byte is None:
+                print("byte is none")
+                break
 
-                if byte & 0x80:
-                    print("byte is good")
-                    if idx == 5 and packet[0] & 0x80:
-                        pulse_data, spo2_data = self.get_datapoint(packet)                     
-                        counter += 1
-                        t += 1
-                    packet = [0]*5
-                    idx = 0
-            
-                if idx < 5:
-                    packet[idx] = byte
-                    idx += 1
-            print("got to the end of byte")
+            if byte & 0x80:
+                print("byte is good")
+                if idx == 5 and packet[0] & 0x80:
+                    pulse_data, spo2_data = self.get_datapoint(packet)                     
+                    counter += 1
+                    t += 1
+                packet = [0]*5
+                idx = 0
+                
+            if idx < 5:
+                packet[idx] = byte
+                idx += 1
+
+            return t, pulse_data, t, spo2_data
+        
         except:# update
             time.sleep(0.1)# faulty cable causes occasional disconnection/connection
             print("hitting except")
@@ -123,9 +132,9 @@ class CMS50Dplus(object):
     def run(self):
         fig, ax = plt.subplots()
         line, = ax.plot([], [], lw=1)
+        line2, = ax.plot([], [], lw=1)
 
         ax.set_title("Pulse and SpO2 Tracker")
-        #ax.set_autoscaley_on(False)
         text_pulse = "Pulse:"
         text_spo2 = "SpO2:"
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -134,19 +143,19 @@ class CMS50Dplus(object):
         ax.text(0.05, 0.85, text_spo2, transform=ax.transAxes, fontsize=14,
                       color='green', verticalalignment='top', bbox=props)
 
-        #ax.grid() # add grid
-        xdata, ydata = [], []
-
-        ani = animation.FuncAnimation(fig, run, data_gen, blit=False, interval=10,
+        time_data, pulse_data = [], []
+        time_data, spo2_data = [], []
+        
+        ani = animation.FuncAnimation(fig, run, data_gen, blit=False, interval=1000,
                               repeat=False, init_func=init)
         plt.show()
 
 
-x_array = []# could use numpy arrays here
-pulse_array = []
-spo2_array = []
+##x_array = []# could use numpy arrays here
+##pulse_array = []
+##spo2_array = []
 
-new_instance = CMS50Dplus("COM3", x_array, pulse_array, spo2_array)# adjust COM port as needed
+new_instance = CMS50Dplus("COM3")# adjust COM port as needed
 new_instance.run()
 
 

@@ -8,17 +8,17 @@ def data_gen(t=0):
     while cnt < 1000:
         cnt += 1
         t += 0.1
-        yield t, 100 * np.sin(2*np.pi*t) * np.exp(-t/10.), t, 120 * np.sin(2.5*np.pi*t) * np.exp(-t/10.)
+        yield t, 100 * np.sin(2*np.pi*t) * np.exp(-t/10.), 120 * np.sin(2.5*np.pi*t) * np.exp(-t/10.)
 
 def init():
     ax.set_ylim(40, 140)# change range!
     ax.set_xlim(0, 10)
     del xdata[:]
     del ydata[:]
-    del xdata2[:]
+#    del xdata2[:]
     del ydata2[:]
     line.set_data(xdata, ydata)
-    line.set_data(xdata2, ydata2)
+    line.set_data(xdata, ydata2)
     return line, line2,
 
 fig, ax = plt.subplots()
@@ -36,16 +36,16 @@ ax.text(0.05, 0.85, text_spo2, transform=ax.transAxes, fontsize=14,
               color='green', verticalalignment='top', bbox=props)
 
 #ax.grid() # add grid
-xdata, ydata = [], []
-xdata2, ydata2 = [], []
+xdata, ydata, ydata2 = [], [], []
+#xdata2, ydata2 = [], []
 
 
 def run(data):
     # update the data
-    t, y, t, y2 = data
+    t, y, y2 = data
     xdata.append(t)
     ydata.append(y)
-    xdata2.append(t)
+#    xdata2.append(t)
     ydata2.append(y2)
     xmin, xmax = ax.get_xlim()
 
@@ -53,7 +53,7 @@ def run(data):
         ax.set_xlim(xmin, 2*xmax)
         ax.figure.canvas.draw()
     line.set_data(xdata, ydata)
-    line2.set_data(xdata2, ydata2)
+    line2.set_data(xdata, ydata2)
 
     return line, line2,
 
