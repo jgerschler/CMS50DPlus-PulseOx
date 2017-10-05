@@ -22,7 +22,6 @@ class CMS50Dplus(object):
         self.x_array = x_array
         self.pulse_array = pulse_array
         self.spo2_array = spo2_array
-        print("ran init")
 
     def is_connected(self):
         return type(self.conn) is serial.Serial and self.conn.isOpen()
@@ -88,7 +87,7 @@ class CMS50Dplus(object):
         # 5th byte
         self.blood_spo2 = data[4] & 0x7f
 
-        return str(self.pulse_rate)+","+str(self.blood_spo2)
+        return self.pulse_rate, self.blood_spo2
 
     def data_gen(self, t=0):# data gen function
         counter = 0
@@ -105,19 +104,8 @@ class CMS50Dplus(object):
 
                 if byte & 0x80:
                     print("byte is good")
-                    if idx == 5 and packet[0] & 0x80:# fix here (set data)
-                        data = str(self.get_datapoint(packet)).split(',')
-                        if len(self.x_array) > 5000:
-                            self.x_array.pop(0)
-                            self.pulse_array.pop(0)
-                            self.spo2_array.pop(0)
-                            self.x_array.append(counter)
-                            self.pulse_array.append(int(data[0]))
-                            self.spo2_array.append(int(data[1]))
-                        else:
-                            self.x_array.append(counter)
-                            self.pulse_array.append(int(data[0]))
-                            self.spo2_array.append(int(data[1]))                      
+                    if idx == 5 and packet[0] & 0x80:
+                        pulse_data, spo2_data = self.get_datapoint(packet)                     
                         counter += 1
                         t += 1
                     packet = [0]*5
