@@ -95,7 +95,7 @@ class CMS50Dplus(object):
 
         return self.pulse_rate, self.blood_spo2
 
-    def data_gen(self, t=0):# data gen function
+    def data_gen(self, t=0):
         counter = 0
         try:
             self.connect()
