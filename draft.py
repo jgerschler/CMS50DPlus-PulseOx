@@ -50,25 +50,26 @@ class CMS50Dplus(object):
         ax.set_ylim(40, 140)
         ax.set_xlim(0, 10)
         del time_data[:]
-        del ydata[:]
-        del xdata2[:]
-        del ydata2[:]
-        line.set_data(xdata, ydata)
-        line.set_data(xdata2, ydata2)
+        del pulse_data[:]
+        del spo2_data[:]
+        line.set_data(time_data, pulse_data)
+        line2.set_data(time_data, spo2_data)
         return line, line2,        
 
     def update_data(self, data):
-        t, y = data
-        xdata.append(t)
-        ydata.append(y)
+        t, pulse, spo2 = data
+        time_data.append(t)
+        pulse_data.append(t)
+        spo2_data.append(t)
         xmin, xmax = ax.get_xlim()
 
         if t >= xmax:
             ax.set_xlim(xmin, 2*xmax)
             ax.figure.canvas.draw()
-        line.set_data(xdata, ydata)
+        line.set_data(time_data, pulse_data)
+        line2.set_data(time_data, spo2_data)
 
-        return line,
+        return line, line2,
 
     def get_datapoint(self, data): 
         if [d & 0x80 != 0 for d in data] != [True, False, False, False, False]:
@@ -122,7 +123,7 @@ class CMS50Dplus(object):
                 packet[idx] = byte
                 idx += 1
 
-            return t, pulse_data, t, spo2_data
+            return t, pulse_data, spo2_data
         
         except:# update
             time.sleep(0.1)# faulty cable causes occasional disconnection/connection
@@ -130,32 +131,26 @@ class CMS50Dplus(object):
             pass
 
     def run(self):
-        fig, ax = plt.subplots()
+        self.fig, self.ax = plt.subplots()
         line, = ax.plot([], [], lw=1)
         line2, = ax.plot([], [], lw=1)
 
-        ax.set_title("Pulse and SpO2 Tracker")
+        self.ax.set_title("Pulse and SpO2 Tracker")
         text_pulse = "Pulse:"
         text_spo2 = "SpO2:"
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(0.05, 0.95, text_pulse, transform=ax.transAxes, fontsize=14,
+        self.ax.text(0.05, 0.95, text_pulse, transform=ax.transAxes, fontsize=14,
                       color='blue', verticalalignment='top', bbox=props)
-        ax.text(0.05, 0.85, text_spo2, transform=ax.transAxes, fontsize=14,
+        self.ax.text(0.05, 0.85, text_spo2, transform=ax.transAxes, fontsize=14,
                       color='green', verticalalignment='top', bbox=props)
 
-        time_data, pulse_data = [], []
-        time_data, spo2_data = [], []
+        self.time_data, self.pulse_data, self.spo2_data = [], [], []
         
-        ani = animation.FuncAnimation(fig, run, data_gen, blit=False, interval=1000,
-                              repeat=False, init_func=init)
+        ani = animation.FuncAnimation(self.fig, self.update_data, self.data_gen, blit=False, interval=1000,
+                              repeat=False, init_func=self.plot_init)
         plt.show()
 
 
-##x_array = []# could use numpy arrays here
-##pulse_array = []
-##spo2_array = []
 
 new_instance = CMS50Dplus("COM3")# adjust COM port as needed
 new_instance.run()
-
-
