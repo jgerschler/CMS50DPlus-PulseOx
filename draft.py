@@ -2,18 +2,15 @@
 
 #!/usr/bin/env python
 import argparse
-#import datetime
 import threading
 import time
 import random
 import serial
 import sys
-#from dateutil import parser as dateparser
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-# pulse oximeter communication thread
 class CMS50Dplus(object):
     def __init__(self, port):
         threading.Thread.__init__(self)
@@ -47,29 +44,29 @@ class CMS50Dplus(object):
             return ord(char)
 
     def plot_init(self):
-        ax.set_ylim(40, 140)
-        ax.set_xlim(0, 10)
-        del time_data[:]
-        del pulse_data[:]
-        del spo2_data[:]
-        line.set_data(time_data, pulse_data)
-        line2.set_data(time_data, spo2_data)
-        return line, line2,        
+        self.ax.set_ylim(40, 140)
+        self.ax.set_xlim(0, 10)
+        del self.time_data[:]
+        del self.pulse_data[:]
+        del self.spo2_data[:]
+        self.line.set_data(time_data, pulse_data)
+        self.line2.set_data(time_data, spo2_data)
+        return self.line, self.line2,        
 
     def update_data(self, data):
         t, pulse, spo2 = data
-        time_data.append(t)
-        pulse_data.append(t)
-        spo2_data.append(t)
-        xmin, xmax = ax.get_xlim()
+        self.time_data.append(t)
+        self.pulse_data.append(pulse)
+        self.spo2_data.append(spo2)
+        xmin, xmax = self.ax.get_xlim()
 
         if t >= xmax:
-            ax.set_xlim(xmin, 2*xmax)
-            ax.figure.canvas.draw()
-        line.set_data(time_data, pulse_data)
-        line2.set_data(time_data, spo2_data)
+            self.ax.set_xlim(xmin, 2*xmax)
+            self.ax.figure.canvas.draw()
+        self.line.set_data(self.time_data, self.pulse_data)
+        self.line2.set_data(self.time_data, self.spo2_data)
 
-        return line, line2,
+        return self.line, self.line2,
 
     def get_datapoint(self, data): 
         if [d & 0x80 != 0 for d in data] != [True, False, False, False, False]:
@@ -132,16 +129,16 @@ class CMS50Dplus(object):
 
     def run(self):
         self.fig, self.ax = plt.subplots()
-        line, = ax.plot([], [], lw=1)
-        line2, = ax.plot([], [], lw=1)
+        self.line, = self.ax.plot([], [], lw=1)
+        self.line2, = self.ax.plot([], [], lw=1)
 
         self.ax.set_title("Pulse and SpO2 Tracker")
         text_pulse = "Pulse:"
         text_spo2 = "SpO2:"
         props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        self.ax.text(0.05, 0.95, text_pulse, transform=ax.transAxes, fontsize=14,
+        self.ax.text(0.05, 0.95, text_pulse, transform=self.ax.transAxes, fontsize=14,
                       color='blue', verticalalignment='top', bbox=props)
-        self.ax.text(0.05, 0.85, text_spo2, transform=ax.transAxes, fontsize=14,
+        self.ax.text(0.05, 0.85, text_spo2, transform=self.ax.transAxes, fontsize=14,
                       color='green', verticalalignment='top', bbox=props)
 
         self.time_data, self.pulse_data, self.spo2_data = [], [], []
