@@ -11,3 +11,5 @@ Instructions:
 4. Run script.
 
 Sources: Contec protocol documentation and https://github.com/atbrask
+
+MAKE SURE YOU'VE SELECTED THE CORRECT COM PORT
