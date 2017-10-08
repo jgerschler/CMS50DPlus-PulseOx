@@ -1,19 +1,13 @@
 #!/usr/bin/env python
-import sys
+
 import serial
-import argparse
-import datetime
-import threading
 import time
-import random
-from dateutil import parser as dateparser
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 
 class CMS50Dplus(object):
     def __init__(self, port):
-        threading.Thread.__init__(self)
         self.port = port
         self.conn = None
 
@@ -70,6 +64,7 @@ class CMS50Dplus(object):
                         self.pulse_rate, self.blood_spo2 = self.get_data(packet)
                         print(counter, self.pulse_rate, self.blood_spo2)
                         counter += 1
+                        time.sleep(1)
                     packet = [0]*5
                     idx = 0
             
@@ -77,7 +72,6 @@ class CMS50Dplus(object):
                     packet[idx] = byte
                     idx+=1
         except:
-            time.sleep(0.1)# faulty cable causes occasional disconnection/connection
             pass  
 
 
