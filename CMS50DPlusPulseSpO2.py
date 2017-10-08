@@ -130,7 +130,7 @@ def animate(i):
     ax1.text(0.05, 0.95, text_pulse, transform=ax1.transAxes, fontsize=14, color='blue', verticalalignment='top', bbox=props)
     ax1.text(0.05, 0.85, text_spo2, transform=ax1.transAxes, fontsize=14, color='green', verticalalignment='top', bbox=props)
 
-new_instance = CMS50Dplus("COM5")# adjust COM port as needed
+new_instance = CMS50Dplus("COM3")# adjust COM port as needed
 new_instance.start()
 time.sleep(1)
 

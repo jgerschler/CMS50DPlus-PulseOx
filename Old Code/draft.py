@@ -43,31 +43,6 @@ class CMS50Dplus(object):
         else:
             return ord(char)
 
-    def plot_init(self):
-        self.ax.set_ylim(40, 140)
-        self.ax.set_xlim(0, 10)
-        del self.time_data[:]
-        del self.pulse_data[:]
-        del self.spo2_data[:]
-        self.line.set_data(time_data, pulse_data)
-        self.line2.set_data(time_data, spo2_data)
-        return self.line, self.line2,        
-
-    def update_data(self, data):
-        t, pulse, spo2 = data
-        self.time_data.append(t)
-        self.pulse_data.append(pulse)
-        self.spo2_data.append(spo2)
-        xmin, xmax = self.ax.get_xlim()
-
-        if t >= xmax:
-            self.ax.set_xlim(xmin, 2*xmax)
-            self.ax.figure.canvas.draw()
-        self.line.set_data(self.time_data, self.pulse_data)
-        self.line2.set_data(self.time_data, self.spo2_data)
-
-        return self.line, self.line2,
-
     def get_datapoint(self, data): 
         if [d & 0x80 != 0 for d in data] != [True, False, False, False, False]:
            raise ValueError("Invalid data packet.")
@@ -95,37 +70,66 @@ class CMS50Dplus(object):
 
         return self.pulse_rate, self.blood_spo2
 
-    def data_gen(self, t=0):
+    def plot_init(self):# function used to draw clear frame
+        self.ax.set_ylim(40, 140)
+        self.ax.set_xlim(0, 10)
+        del self.time_data[:]
+        del self.pulse_data[:]
+        del self.spo2_data[:]
+        self.line.set_data(self.time_data, self.pulse_data)
+        self.line2.set_data(self.time_data, self.spo2_data)
+        print("plot init triggered")
+        print(self.line)
+        return self.line, self.line2,        
+
+    def update_data(self, data):# function to call each frame (update lists)
+        t, pulse, spo2 = data
+        self.time_data.append(t)
+        self.pulse_data.append(pulse)
+        self.spo2_data.append(spo2)
+        xmin, xmax = self.ax.get_xlim()
+
+        if t >= xmax:
+            self.ax.set_xlim(xmin, 2*xmax)
+            self.ax.figure.canvas.draw()
+        self.line.set_data(self.time_data, self.pulse_data)
+        self.line2.set_data(self.time_data, self.spo2_data)
+
+        print("update data triggered")
+        return self.line, self.line2,
+
+    def data_gen(self, t=0):# generate iterable and pass to data update function
         counter = 0
-        try:
-            self.connect()
+##        try:
+        self.connect()
+        packet = [0]*5
+        idx = 0
+        byte = self.get_byte()
+    
+        if byte is None:
+            print("byte is none")
+            self.pulse_data, self.spo2_data = 0, 0
+
+        if byte & 0x80:
+            print("byte is good")
+            if idx == 5 and packet[0] & 0x80:
+                self.pulse_data, self.spo2_data = self.get_datapoint(packet)                     
+                counter += 1
+                t += 1
             packet = [0]*5
             idx = 0
-            byte = self.get_byte()
-        
-            if byte is None:
-                print("byte is none")
-                break
+            
+        if idx < 5:
+            packet[idx] = byte
+            idx += 1
 
-            if byte & 0x80:
-                print("byte is good")
-                if idx == 5 and packet[0] & 0x80:
-                    pulse_data, spo2_data = self.get_datapoint(packet)                     
-                    counter += 1
-                    t += 1
-                packet = [0]*5
-                idx = 0
-                
-            if idx < 5:
-                packet[idx] = byte
-                idx += 1
-
-            return t, pulse_data, spo2_data
+        print("data gen triggered")
+        return t, self.pulse_data, self.spo2_data
         
-        except:# update
-            time.sleep(0.1)# faulty cable causes occasional disconnection/connection
-            print("hitting except")
-            pass
+##        except:# update
+##            time.sleep(0.1)# faulty cable causes occasional disconnection/connection
+##            print("hitting except")
+##            pass
 
     def run(self):
         self.fig, self.ax = plt.subplots()
