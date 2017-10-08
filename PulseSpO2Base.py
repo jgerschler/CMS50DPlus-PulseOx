@@ -1,10 +1,10 @@
+"""Base code for obtaining data from CMS50DPlus
+"""
+
 #!/usr/bin/env python
 
 import serial
 import time
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-
 
 class CMS50Dplus(object):
     def __init__(self, port):
@@ -64,7 +64,6 @@ class CMS50Dplus(object):
                         self.pulse_rate, self.blood_spo2 = self.get_data(packet)
                         print(counter, self.pulse_rate, self.blood_spo2)
                         counter += 1
-                        time.sleep(1)
                     packet = [0]*5
                     idx = 0
             
@@ -73,8 +72,6 @@ class CMS50Dplus(object):
                     idx+=1
         except:
             pass  
-
-
 
 new_instance = CMS50Dplus("COM3")# adjust COM port as needed
 new_instance.run()
